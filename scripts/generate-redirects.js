@@ -112,6 +112,73 @@ async function generateRedirects() {
     const filename = path.join(publicDir, `${slug}.html`);
     fs.writeFileSync(filename, html);
     console.log(`✓ Generated: ${slug}.html`);
+
+    // Generate image-only version for large clickable images on Facebook
+    const imageOnlyHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- Minimal title (Facebook requires it but won't show prominently) -->
+  <meta property="og:title" content=" " />
+  
+  <!-- Large image configuration -->
+  <meta property="og:image" content="${image}" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:type" content="image/jpeg" />
+  
+  <!-- URL points to this Netlify page -->
+  <meta property="og:url" content="https://dainty-kheer-4cc17f.netlify.app/${slug}-img.html" />
+  
+  <!-- Website type for large image display -->
+  <meta property="og:type" content="website" />
+  
+  <!-- No description for cleaner look -->
+  
+  <!-- Twitter Card for large image -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="${image}">
+  
+  <!-- Conditional redirect - only for human users, not bots -->
+  <script>
+    // Check if it's a bot/crawler
+    var userAgent = navigator.userAgent.toLowerCase();
+    var isCrawler = /bot|crawler|spider|facebookexternalhit|twitterbot|pinterest|whatsapp/i.test(userAgent);
+    
+    // Only redirect if NOT a crawler
+    if (!isCrawler) {
+      window.location.href = "${wpUrl}";
+    }
+  </script>
+  
+  <title>${title}</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: #000;
+    }
+    img {
+      max-width: 100%;
+      height: auto;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <img src="${image}" alt="${title}" onclick="window.location.href='${wpUrl}'">
+</body>
+</html>`;
+
+    const imageFilename = path.join(publicDir, `${slug}-img.html`);
+    fs.writeFileSync(imageFilename, imageOnlyHtml);
+    console.log(`✓ Generated: ${slug}-img.html (image-only)`);
   }
 
   // Create index.html (homepage redirect)
