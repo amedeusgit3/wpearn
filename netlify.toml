@@ -1,0 +1,21 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+# Redirect rules for dynamic routing
+[[redirects]]
+  from = "/*"
+  to = "/.netlify/functions/nextjs/:splat"
+  status = 200
+
+# Headers for API routes
+[[headers]]
+  for = "/.netlify/functions/*"
+  [headers.values]
+    cache-control = "public, max-age=0, must-revalidate"
