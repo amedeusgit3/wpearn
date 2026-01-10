@@ -3,50 +3,50 @@ const fs = require('fs');
 const path = require('path');
 
 async function fetchJson(url) {
-    return new Promise((resolve, reject) => {
-        https.get(url, (res) => {
-            let data = '';
-            res.on('data', (chunk) => { data += chunk; });
-            res.on('end', () => {
-                try {
-                    resolve(JSON.parse(data));
-                } catch (e) {
-                    reject(e);
-                }
-            });
-        }).on('error', reject);
-    });
+  return new Promise((resolve, reject) => {
+    https.get(url, (res) => {
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => {
+        try {
+          resolve(JSON.parse(data));
+        } catch (e) {
+          reject(e);
+        }
+      });
+    }).on('error', reject);
+  });
 }
 
 async function generateRedirects() {
-    console.log('Fetching WordPress posts...');
+  console.log('Fetching WordPress posts...');
 
-    // Fetch posts from WordPress REST API
-    const posts = await fetchJson('https://earn.tapza.site/wp-json/wp/v2/posts?per_page=100&_embed');
+  // Fetch posts from WordPress REST API
+  const posts = await fetchJson('https://earn.tapza.site/wp-json/wp/v2/posts?per_page=100&_embed');
 
-    // Create public directory
-    const publicDir = path.join(__dirname, '..', 'public');
-    if (!fs.existsSync(publicDir)) {
-        fs.mkdirSync(publicDir, { recursive: true });
+  // Create public directory
+  const publicDir = path.join(__dirname, '..', 'public');
+  if (!fs.existsSync(publicDir)) {
+    fs.mkdirSync(publicDir, { recursive: true });
+  }
+
+  console.log(`Found ${posts.length} posts. Generating HTML files...`);
+
+  // Generate HTML for each post
+  for (const post of posts) {
+    const slug = post.slug;
+    const title = post.title.rendered.replace(/"/g, '&quot;');
+    const excerpt = post.excerpt.rendered.replace(/<[^>]*>/g, '').replace(/"/g, '&quot;').substring(0, 200);
+
+    // Get featured image
+    let image = 'https://earn.tapza.site/wp-content/uploads/default-image.jpg';
+    if (post._embedded && post._embedded['wp:featuredmedia']) {
+      image = post._embedded['wp:featuredmedia'][0].source_url;
     }
 
-    console.log(`Found ${posts.length} posts. Generating HTML files...`);
+    const wpUrl = post.link;
 
-    // Generate HTML for each post
-    for (const post of posts) {
-        const slug = post.slug;
-        const title = post.title.rendered.replace(/"/g, '&quot;');
-        const excerpt = post.excerpt.rendered.replace(/<[^>]*>/g, '').replace(/"/g, '&quot;').substring(0, 200);
-
-        // Get featured image
-        let image = 'https://earn.tapza.site/wp-content/uploads/default-image.jpg';
-        if (post._embedded && post._embedded['wp:featuredmedia']) {
-            image = post._embedded['wp:featuredmedia'][0].source_url;
-        }
-
-        const wpUrl = post.link;
-
-        const html = `<!DOCTYPE html>
+    const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -66,11 +66,16 @@ async function generateRedirects() {
   <meta name="twitter:description" content="${excerpt}">
   <meta name="twitter:image" content="${image}">
   
-  <!-- Auto-redirect -->
-  <meta http-equiv="refresh" content="0;url=${wpUrl}" />
+  <!-- Conditional redirect - only for human users, not bots -->
   <script>
-    // Immediate redirect
-    window.location.href="${wpUrl}";
+    // Check if it's a bot/crawler
+    var userAgent = navigator.userAgent.toLowerCase();
+    var isCrawler = /bot|crawler|spider|facebookexternalhit|twitterbot|pinterest|whatsapp/i.test(userAgent);
+    
+    // Only redirect if NOT a crawler
+    if (!isCrawler) {
+      window.location.href = "${wpUrl}";
+    }
   </script>
   
   <title>${title}</title>
@@ -97,19 +102,20 @@ async function generateRedirects() {
 </head>
 <body>
   <div class="container">
-    <h1>Redirecting...</h1>
-    <p>If you are not redirected automatically, <a href="${wpUrl}">click here</a>.</p>
+    <h1>${title}</h1>
+    <p>${excerpt}</p>
+    <p><a href="${wpUrl}">Click here to read this article</a></p>
   </div>
 </body>
 </html>`;
 
-        const filename = path.join(publicDir, `${slug}.html`);
-        fs.writeFileSync(filename, html);
-        console.log(`✓ Generated: ${slug}.html`);
-    }
+    const filename = path.join(publicDir, `${slug}.html`);
+    fs.writeFileSync(filename, html);
+    console.log(`✓ Generated: ${slug}.html`);
+  }
 
-    // Create index.html (homepage redirect)
-    const indexHtml = `<!DOCTYPE html>
+  // Create index.html (homepage redirect)
+  const indexHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -168,13 +174,13 @@ async function generateRedirects() {
 </body>
 </html>`;
 
-    fs.writeFileSync(path.join(publicDir, 'index.html'), indexHtml);
-    console.log(`✓ Generated: index.html`);
+  fs.writeFileSync(path.join(publicDir, 'index.html'), indexHtml);
+  console.log(`✓ Generated: index.html`);
 
-    console.log(`\n✅ Done! Generated ${posts.length + 1} HTML files in public/`);
+  console.log(`\n✅ Done! Generated ${posts.length + 1} HTML files in public/`);
 }
 
 generateRedirects().catch(err => {
-    console.error('Error:', err);
-    process.exit(1);
+  console.error('Error:', err);
+  process.exit(1);
 });

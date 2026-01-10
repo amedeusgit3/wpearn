@@ -20,11 +20,16 @@
 ">
   <meta name="twitter:image" content="https://earn.tapza.site/wp-content/uploads/default-image.jpg">
   
-  <!-- Auto-redirect -->
-  <meta http-equiv="refresh" content="0;url=https://earn.tapza.site/2026/01/10/hello-world/" />
+  <!-- Conditional redirect - only for human users, not bots -->
   <script>
-    // Immediate redirect
-    window.location.href="https://earn.tapza.site/2026/01/10/hello-world/";
+    // Check if it's a bot/crawler
+    var userAgent = navigator.userAgent.toLowerCase();
+    var isCrawler = /bot|crawler|spider|facebookexternalhit|twitterbot|pinterest|whatsapp/i.test(userAgent);
+    
+    // Only redirect if NOT a crawler
+    if (!isCrawler) {
+      window.location.href = "https://earn.tapza.site/hello-world/";
+    }
   </script>
   
   <title>Hello world!</title>
@@ -51,8 +56,10 @@
 </head>
 <body>
   <div class="container">
-    <h1>Redirecting...</h1>
-    <p>If you are not redirected automatically, <a href="https://earn.tapza.site/2026/01/10/hello-world/">click here</a>.</p>
+    <h1>Hello world!</h1>
+    <p>Welcome to WordPress. This is your first post. Edit or delete it, then start writing!
+</p>
+    <p><a href="https://earn.tapza.site/hello-world/">Click here to read this article</a></p>
   </div>
 </body>
 </html>
