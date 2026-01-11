@@ -22,7 +22,7 @@ async function generateRedirects() {
   console.log('Fetching WordPress posts...');
 
   // Fetch posts from WordPress REST API
-  const posts = await fetchJson('https://earn.tapza.site/wp-json/wp/v2/posts?per_page=100&_embed');
+  const posts = await fetchJson('https://tapza.site/earn/wp-json/wp/v2/posts?per_page=100&_embed');
 
   // Create public directory
   const publicDir = path.join(__dirname, '..', 'public');
@@ -38,8 +38,10 @@ async function generateRedirects() {
     const title = post.title.rendered.replace(/"/g, '&quot;');
     const excerpt = post.excerpt.rendered.replace(/<[^>]*>/g, '').replace(/"/g, '&quot;').substring(0, 200);
 
+    const content = post.content.rendered;
+
     // Get featured image
-    let image = 'https://earn.tapza.site/wp-content/uploads/default-image.jpg';
+    let image = 'https://tapza.site/earn/wp-content/uploads/default-image.jpg';
     if (post._embedded && post._embedded['wp:featuredmedia']) {
       image = post._embedded['wp:featuredmedia'][0].source_url;
     }
@@ -56,7 +58,7 @@ async function generateRedirects() {
   <meta property="og:title" content="${title}" />
   <meta property="og:description" content="${excerpt}" />
   <meta property="og:image" content="${image}" />
-  <meta property="og:url" content="https://dainty-kheer-4cc17f.netlify.app/${slug}.html" />
+  <meta property="og:url" content="tapza.netlify.app${slug}.html" />
   <meta property="og:type" content="article" />
   <meta property="og:site_name" content="Tapza" />
   
@@ -82,29 +84,36 @@ async function generateRedirects() {
   <style>
     body {
       font-family: Arial, sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
       margin: 0;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
+      background: white;
+      color: #333;
+      line-height: 1.6;
     }
     .container {
-      text-align: center;
+      max-width: 800px;
+      margin: 0 auto;
       padding: 2rem;
     }
+    img {
+      max-width: 100%;
+      height: auto;
+    }
     a {
-      color: white;
-      text-decoration: underline;
+      color: #007bff;
+      text-decoration: none;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 2rem;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>${title}</h1>
-    <p>${excerpt}</p>
-    <p><a href="${wpUrl}">Click here to read this article</a></p>
+    <div class="content">
+      ${content}
+    </div>
   </div>
 </body>
 </html>`;
@@ -112,73 +121,6 @@ async function generateRedirects() {
     const filename = path.join(publicDir, `${slug}.html`);
     fs.writeFileSync(filename, html);
     console.log(`✓ Generated: ${slug}.html`);
-
-    // Generate image-only version for large clickable images on Facebook
-    const imageOnlyHtml = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
-  <!-- Minimal title (Facebook requires it but won't show prominently) -->
-  <meta property="og:title" content=" " />
-  
-  <!-- Large image configuration -->
-  <meta property="og:image" content="${image}" />
-  <meta property="og:image:width" content="1200" />
-  <meta property="og:image:height" content="630" />
-  <meta property="og:image:type" content="image/jpeg" />
-  
-  <!-- URL points to this Netlify page -->
-  <meta property="og:url" content="https://dainty-kheer-4cc17f.netlify.app/${slug}-img.html" />
-  
-  <!-- Website type for large image display -->
-  <meta property="og:type" content="website" />
-  
-  <!-- No description for cleaner look -->
-  
-  <!-- Twitter Card for large image -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:image" content="${image}">
-  
-  <!-- Conditional redirect - only for human users, not bots -->
-  <script>
-    // Check if it's a bot/crawler
-    var userAgent = navigator.userAgent.toLowerCase();
-    var isCrawler = /bot|crawler|spider|facebookexternalhit|twitterbot|pinterest|whatsapp/i.test(userAgent);
-    
-    // Only redirect if NOT a crawler
-    if (!isCrawler) {
-      window.location.href = "${wpUrl}";
-    }
-  </script>
-  
-  <title>${title}</title>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      background: #000;
-    }
-    img {
-      max-width: 100%;
-      height: auto;
-      cursor: pointer;
-    }
-  </style>
-</head>
-<body>
-  <img src="${image}" alt="${title}" onclick="window.location.href='${wpUrl}'">
-</body>
-</html>`;
-
-    const imageFilename = path.join(publicDir, `${slug}-img.html`);
-    fs.writeFileSync(imageFilename, imageOnlyHtml);
-    console.log(`✓ Generated: ${slug}-img.html (image-only)`);
   }
 
   // Create index.html (homepage redirect)
@@ -189,7 +131,7 @@ async function generateRedirects() {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta property="og:title" content="Tapza - WordPress Social Preview" />
   <meta property="og:description" content="Share WordPress posts with rich previews" />
-  <meta property="og:image" content="https://earn.tapza.site/wp-content/uploads/default-image.jpg" />
+  <meta property="og:image" content="https://tapza.site/earn/wp-content/uploads/default-image.jpg" />
   <title>WordPress Social Preview</title>
   <style>
     body {
@@ -232,7 +174,7 @@ async function generateRedirects() {
       <h3>How to use:</h3>
       <ol>
         <li>Get your WordPress post slug (e.g., "hello-world")</li>
-        <li>Share: <code>https://dainty-kheer-4cc17f.netlify.app/your-slug.html</code></li>
+        <li>Share: <code>tapza.netlify.appyour-slug.html</code></li>
         <li>Facebook shows preview ✓</li>
         <li>Users get redirected to WordPress ✓</li>
       </ol>
