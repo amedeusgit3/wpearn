@@ -4,13 +4,23 @@ const path = require('path');
 
 async function fetchJson(url) {
   return new Promise((resolve, reject) => {
-    https.get(url, (res) => {
+    const options = {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      }
+    };
+    https.get(url, options, (res) => {
       let data = '';
       res.on('data', (chunk) => { data += chunk; });
       res.on('end', () => {
+        if (res.statusCode !== 200) {
+          reject(new Error(`Request Failed. Status Code: ${res.statusCode}. Data: ${data.substring(0, 100)}...`));
+          return;
+        }
         try {
           resolve(JSON.parse(data));
         } catch (e) {
+          console.error('JSON Parse Error Detail:', data.substring(0, 500));
           reject(e);
         }
       });
@@ -22,7 +32,7 @@ async function generateRedirects() {
   console.log('Fetching WordPress posts...');
 
   // Fetch posts from WordPress REST API
-  const posts = await fetchJson('https://tapza.site/earn/wp-json/wp/v2/posts?per_page=100&_embed');
+  const posts = await fetchJson('https://blog.tapza.site/wp-json/wp/v2/posts?per_page=100&_embed');
 
   // Create public directory
   const publicDir = path.join(__dirname, '..', 'public');
@@ -41,7 +51,7 @@ async function generateRedirects() {
     const content = post.content.rendered;
 
     // Get featured image
-    let image = 'https://tapza.site/earn/wp-content/uploads/default-image.jpg';
+    let image = 'https://blog.tapza.site/wp-content/uploads/default-image.jpg';
     if (post._embedded && post._embedded['wp:featuredmedia']) {
       image = post._embedded['wp:featuredmedia'][0].source_url;
     }
@@ -131,7 +141,7 @@ async function generateRedirects() {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta property="og:title" content="Tapza - WordPress Social Preview" />
   <meta property="og:description" content="Share WordPress posts with rich previews" />
-  <meta property="og:image" content="https://tapza.site/earn/wp-content/uploads/default-image.jpg" />
+  <meta property="og:image" content="https://blog.tapza.site/wp-content/uploads/default-image.jpg" />
   <title>WordPress Social Preview</title>
   <style>
     body {
